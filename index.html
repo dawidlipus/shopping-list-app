@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+
+    <!-- iOS Standalone App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Shopping List">
+
+    <!-- App Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23667eea' rx='20'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='white'>🛒</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🛒</text></svg>">
+
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="msapplication-TileColor" content="#667eea">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlNob3BwaW5nIExpc3QiLAogICJzaG9ydF9uYW1lIjogIlNob3BwaW5nIiwKICAiZGVzY3JpcHRpb24iOiAiU21hcnQgc2hvcHBpbmcgbGlzdCB3aXRoIGF1dG8tY2F0ZWdvcml6YXRpb24iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiM2NjdlZWEiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nJTIzNjY3ZWVhJyByeD0nMjAnLz48dGV4dCB4PSc1MCcgeT0nNzAnIGZvbnQtc2l6ZT0nNjAnIHRleHQtYW5jaG9yPSdtaWRkbGUnIGZpbGw9J3doaXRlJz7wn5uyPC90ZXh0Pjwvc3ZnPiIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHJlY3Qgd2lkdGg9JzEwMCcgaGVpZ2h0PScxMDAnIGZpbGw9JyUyMzY2N2VlYScgcng9JzIwJy8+PHRleHQgeD0nNTAnIHk9JzcwJyBmb250LXNpemU9JzYwJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBmaWxsPSd3aGl0ZSc+8J+bsjwvdGV4dD48L3N2Zz4iLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
+
+    <title>Shopping List</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        html {
+            height: -webkit-fill-available;
+        }
+
+        /* Standalone app styling */
+        @media all and (display-mode: standalone) {
+            body {
+                padding-top: max(10px, env(safe-area-inset-top));
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+            }
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+                align-items: flex-start;
+            }
+
+            .container {
+                border-radius: 10px;
+                padding: 15px;
+                margin: 5px 0;
+            }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        #itemInput {
+            flex: 1;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 22px;
+                margin-bottom: 15px;
+            }
+
+            #itemInput {
+                padding: 16px 14px;
+                font-size: 16px;
+            }
+        }
+
+        #itemInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        #addBtn {
+            background: #667eea;
+            color: white;
+            min-width: 80px;
+        }
+
+        #addBtn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        #addBtn:active {
+            background: #4a55c4;
+            transform: translateY(0);
+        }
+
+        #downloadBtn {
+            width: 100%;
+            background: #10b981;
+            color: white;
+            margin-top: 15px;
+        }
+
+        #downloadBtn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        #downloadBtn:active {
+            background: #047857;
+            transform: translateY(0);
+        }
+
+        #downloadBtn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 600px) {
+            button {
+                padding: 16px 20px;
+                font-size: 16px;
+            }
+
+            #addBtn {
+                min-width: 70px;
+            }
+        }
+
+        .list-section {
+            min-height: 150px;
+            max-height: calc(100vh - 350px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .item:hover {
+            background: #f3f4f6;
+        }
+
+        .item:active {
+            background: #e5e7eb;
+        }
+
+        .item-text {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .bought-btn {
+            background: #ef4444;
+            color: white;
+            padding: 10px 18px;
+            font-size: 14px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .bought-btn:hover {
+            background: #dc2626;
+        }
+
+        .bought-btn:active {
+            background: #b91c1c;
+        }
+
+        @media (max-width: 600px) {
+            .list-section {
+                max-height: calc(100vh - 320px);
+            }
+
+            .item {
+                padding: 18px 14px;
+            }
+
+            .item-text {
+                font-size: 16px;
+            }
+
+            .bought-btn {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #9ca3af;
+            padding: 40px 20px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .item-count {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .category-header {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-header:first-child {
+            margin-top: 0;
+        }
+
+        @media (max-width: 600px) {
+            .empty-state {
+                padding: 30px 15px;
+                font-size: 14px;
+            }
+
+            .category-header {
+                font-size: 11px;
+                margin-top: 16px;
+                margin-bottom: 6px;
+                padding-bottom: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Shopping List</h1>
+
+        <div class="input-section">
+            <input
+                type="text"
+                id="itemInput"
+                placeholder="Enter item name..."
+                autocomplete="off"
+            >
+            <button id="addBtn">Add</button>
+        </div>
+
+        <div class="item-count" id="itemCount">0 items</div>
+
+        <div class="list-section" id="listSection">
+            <div class="empty-state">Your shopping list is empty.<br>Add some items to get started!</div>
+        </div>
+
+        <button id="downloadBtn" disabled>Download as Excel</button>
+    </div>
+
+    <script>
+        let shoppingList = [];
+
+        const itemInput = document.getElementById('itemInput');
+        const addBtn = document.getElementById('addBtn');
+        const listSection = document.getElementById('listSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const itemCount = document.getElementById('itemCount');
+
+        // Shop categories in typical walking order
+        const CATEGORIES = {
+            'produce': { name: 'Fruits & Vegetables', emoji: '🥬', order: 1 },
+            'bakery': { name: 'Bakery', emoji: '🥖', order: 2 },
+            'meat': { name: 'Meat & Seafood', emoji: '🥩', order: 3 },
+            'dairy': { name: 'Dairy & Eggs', emoji: '🥛', order: 4 },
+            'frozen': { name: 'Frozen', emoji: '❄️', order: 5 },
+            'pantry': { name: 'Pantry & Canned', emoji: '🥫', order: 6 },
+            'snacks': { name: 'Snacks & Sweets', emoji: '🍿', order: 7 },
+            'beverages': { name: 'Beverages', emoji: '🥤', order: 8 },
+            'household': { name: 'Household & Cleaning', emoji: '🧹', order: 9 },
+            'health': { name: 'Health & Beauty', emoji: '💊', order: 10 },
+            'other': { name: 'Other', emoji: '📦', order: 11 }
+        };
+
+        // Keyword mapping for auto-categorization
+        const CATEGORY_KEYWORDS = {
+            'produce': ['apple', 'banana', 'orange', 'tomato', 'lettuce', 'carrot', 'onion', 'potato', 'cucumber', 'pepper', 'spinach', 'broccoli', 'avocado', 'strawberry', 'grape', 'lemon', 'lime', 'garlic', 'mushroom', 'salad', 'celery', 'zucchini', 'fruit', 'vegetable', 'veggie'],
+            'bakery': ['bread', 'bun', 'bagel', 'croissant', 'muffin', 'cake', 'pastry', 'donut', 'roll', 'baguette', 'tortilla', 'pita'],
+            'meat': ['chicken', 'beef', 'pork', 'turkey', 'fish', 'salmon', 'tuna', 'shrimp', 'bacon', 'sausage', 'steak', 'lamb', 'ham', 'meat', 'seafood'],
+            'dairy': ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'sour cream', 'cottage cheese', 'cheddar', 'mozzarella', 'parmesan', 'dairy'],
+            'frozen': ['ice cream', 'frozen', 'pizza', 'fries', 'ice', 'popsicle', 'freezer'],
+            'pantry': ['pasta', 'rice', 'beans', 'cereal', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'sauce', 'soup', 'can', 'jar', 'ketchup', 'mayo', 'mustard', 'vinegar', 'spice', 'canned', 'peanut butter', 'jam', 'honey'],
+            'snacks': ['chips', 'cookie', 'chocolate', 'candy', 'popcorn', 'nuts', 'cracker', 'snack', 'bar', 'granola'],
+            'beverages': ['water', 'soda', 'juice', 'coffee', 'tea', 'beer', 'wine', 'drink', 'cola', 'sprite', 'lemonade', 'smoothie'],
+            'household': ['paper towel', 'toilet paper', 'tissue', 'soap', 'detergent', 'cleaner', 'trash bag', 'aluminum foil', 'plastic wrap', 'dish soap', 'sponge', 'bleach', 'laundry'],
+            'health': ['shampoo', 'toothpaste', 'toothbrush', 'deodorant', 'lotion', 'vitamin', 'medicine', 'bandaid', 'cosmetic', 'beauty']
+        };
+
+        // Categorize item based on keywords
+        function categorizeItem(itemName) {
+            const lowerName = itemName.toLowerCase();
+
+            for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+                if (keywords.some(keyword => lowerName.includes(keyword))) {
+                    return category;
+                }
+            }
+
+            return 'other';
+        }
+
+        // Load from localStorage
+        function loadList() {
+            const saved = localStorage.getItem('shoppingList');
+            if (saved) {
+                shoppingList = JSON.parse(saved);
+                renderList();
+            }
+        }
+
+        // Save to localStorage
+        function saveList() {
+            localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
+        }
+
+        // Add item
+        function addItem() {
+            const itemName = itemInput.value.trim();
+            if (itemName === '') return;
+
+            const item = {
+                id: Date.now(),
+                name: itemName,
+                category: categorizeItem(itemName),
+                addedDate: new Date().toISOString()
+            };
+
+            shoppingList.push(item);
+            saveList();
+            renderList();
+            itemInput.value = '';
+            itemInput.focus();
+        }
+
+        // Mark as bought (remove item)
+        function markAsBought(id) {
+            shoppingList = shoppingList.filter(item => item.id !== id);
+            saveList();
+            renderList();
+        }
+
+        // Group items by category and sort
+        function groupAndSortItems() {
+            const grouped = {};
+
+            shoppingList.forEach(item => {
+                const category = item.category || 'other';
+                if (!grouped[category]) {
+                    grouped[category] = [];
+                }
+                grouped[category].push(item);
+            });
+
+            // Sort categories by order
+            const sorted = Object.keys(grouped).sort((a, b) => {
+                return CATEGORIES[a].order - CATEGORIES[b].order;
+            });
+
+            return sorted.map(category => ({
+                category,
+                items: grouped[category]
+            }));
+        }
+
+        // Render list
+        function renderList() {
+            if (shoppingList.length === 0) {
+                listSection.innerHTML = '<div class="empty-state">Your shopping list is empty.<br>Add some items to get started!</div>';
+                downloadBtn.disabled = true;
+                itemCount.textContent = '0 items';
+                return;
+            }
+
+            downloadBtn.disabled = false;
+            itemCount.textContent = `${shoppingList.length} item${shoppingList.length !== 1 ? 's' : ''}`;
+
+            const groupedItems = groupAndSortItems();
+
+            listSection.innerHTML = groupedItems.map(group => {
+                const cat = CATEGORIES[group.category];
+                return `
+                    <div class="category-header">
+                        <span>${cat.emoji}</span>
+                        <span>${cat.name}</span>
+                    </div>
+                    ${group.items.map(item => `
+                        <div class="item">
+                            <span class="item-text">${item.name}</span>
+                            <button class="bought-btn" onclick="markAsBought(${item.id})">✓ Bought</button>
+                        </div>
+                    `).join('')}
+                `;
+            }).join('');
+        }
+
+        // Download as Excel
+        function downloadExcel() {
+            if (shoppingList.length === 0) return;
+
+            const groupedItems = groupAndSortItems();
+            const data = [];
+
+            groupedItems.forEach(group => {
+                const cat = CATEGORIES[group.category];
+                group.items.forEach(item => {
+                    data.push({
+                        'Category': cat.name,
+                        'Item': item.name,
+                        'Added Date': new Date(item.addedDate).toLocaleDateString()
+                    });
+                });
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Shopping List');
+
+            // Auto-size columns
+            const maxItemWidth = data.reduce((w, r) => Math.max(w, r.Item.length), 10);
+            ws['!cols'] = [
+                { wch: 20 },
+                { wch: maxItemWidth + 2 },
+                { wch: 15 }
+            ];
+
+            const timestamp = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `shopping-list-${timestamp}.xlsx`);
+        }
+
+        // Event listeners
+        addBtn.addEventListener('click', addItem);
+        itemInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addItem();
+        });
+        downloadBtn.addEventListener('click', downloadExcel);
+
+        // Make functions globally available
+        window.markAsBought = markAsBought;
+
+        // Initialize
+        loadList();
+        itemInput.focus();
+    </script>
+</body>
+</html>
