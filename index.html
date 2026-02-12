@@ -75,11 +75,37 @@
             }
         }
 
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         h1 {
             color: #333;
-            margin-bottom: 20px;
-            text-align: center;
             font-size: 24px;
+            flex: 1;
+            text-align: center;
+        }
+
+        #langBtn {
+            background: #f3f4f6;
+            color: #667eea;
+            padding: 8px 12px;
+            font-size: 14px;
+            min-width: 50px;
+            font-weight: 700;
+        }
+
+        #langBtn:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        #langBtn:active {
+            background: #d1d5db;
+            transform: translateY(0);
         }
 
         .input-section {
@@ -101,13 +127,18 @@
 
         @media (max-width: 600px) {
             h1 {
-                font-size: 22px;
-                margin-bottom: 15px;
+                font-size: 20px;
             }
 
             #itemInput {
                 padding: 16px 14px;
                 font-size: 16px;
+            }
+
+            #langBtn {
+                padding: 8px 10px;
+                font-size: 13px;
+                min-width: 45px;
             }
         }
 
@@ -180,7 +211,7 @@
 
         .list-section {
             min-height: 150px;
-            max-height: calc(100vh - 350px);
+            max-height: calc(100vh - 380px);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -231,7 +262,7 @@
 
         @media (max-width: 600px) {
             .list-section {
-                max-height: calc(100vh - 320px);
+                max-height: calc(100vh - 350px);
             }
 
             .item {
@@ -298,7 +329,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>🛒 Shopping List</h1>
+        <div class="header">
+            <div style="width: 50px;"></div>
+            <h1 id="title">🛒 Shopping List</h1>
+            <button id="langBtn">EN</button>
+        </div>
 
         <div class="input-section">
             <input
@@ -313,7 +348,7 @@
         <div class="item-count" id="itemCount">0 items</div>
 
         <div class="list-section" id="listSection">
-            <div class="empty-state">Your shopping list is empty.<br>Add some items to get started!</div>
+            <div class="empty-state" id="emptyState">Your shopping list is empty.<br>Add some items to get started!</div>
         </div>
 
         <button id="downloadBtn" disabled>Download as Excel</button>
@@ -321,40 +356,106 @@
 
     <script>
         let shoppingList = [];
+        let currentLang = 'en';
 
         const itemInput = document.getElementById('itemInput');
         const addBtn = document.getElementById('addBtn');
         const listSection = document.getElementById('listSection');
         const downloadBtn = document.getElementById('downloadBtn');
         const itemCount = document.getElementById('itemCount');
+        const langBtn = document.getElementById('langBtn');
+        const title = document.getElementById('title');
+        const emptyState = document.getElementById('emptyState');
+
+        // Translations
+        const TRANSLATIONS = {
+            en: {
+                title: '🛒 Shopping List',
+                placeholder: 'Enter item name...',
+                addBtn: 'Add',
+                downloadBtn: 'Download as Excel',
+                boughtBtn: '✓ Bought',
+                itemsCount: (n) => `${n} item${n !== 1 ? 's' : ''}`,
+                emptyState: 'Your shopping list is empty.<br>Add some items to get started!',
+                categories: {
+                    produce: 'Fruits & Vegetables',
+                    bakery: 'Bakery',
+                    meat: 'Meat & Seafood',
+                    dairy: 'Dairy & Eggs',
+                    frozen: 'Frozen',
+                    pantry: 'Pantry & Canned',
+                    snacks: 'Snacks & Sweets',
+                    beverages: 'Beverages',
+                    household: 'Household & Cleaning',
+                    health: 'Health & Beauty',
+                    other: 'Other'
+                },
+                excelHeaders: {
+                    category: 'Category',
+                    item: 'Item',
+                    date: 'Added Date'
+                }
+            },
+            pl: {
+                title: '🛒 Lista Zakupów',
+                placeholder: 'Wpisz nazwę produktu...',
+                addBtn: 'Dodaj',
+                downloadBtn: 'Pobierz jako Excel',
+                boughtBtn: '✓ Kupione',
+                itemsCount: (n) => {
+                    if (n === 1) return '1 produkt';
+                    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return `${n} produkty`;
+                    return `${n} produktów`;
+                },
+                emptyState: 'Twoja lista zakupów jest pusta.<br>Dodaj produkty, aby zacząć!',
+                categories: {
+                    produce: 'Owoce i Warzywa',
+                    bakery: 'Pieczywo',
+                    meat: 'Mięso i Ryby',
+                    dairy: 'Nabiał i Jajka',
+                    frozen: 'Mrożonki',
+                    pantry: 'Spiżarnia',
+                    snacks: 'Przekąski i Słodycze',
+                    beverages: 'Napoje',
+                    household: 'Chemia i Czystość',
+                    health: 'Zdrowie i Uroda',
+                    other: 'Inne'
+                },
+                excelHeaders: {
+                    category: 'Kategoria',
+                    item: 'Produkt',
+                    date: 'Data dodania'
+                }
+            }
+        };
 
         // Shop categories in typical walking order
         const CATEGORIES = {
-            'produce': { name: 'Fruits & Vegetables', emoji: '🥬', order: 1 },
-            'bakery': { name: 'Bakery', emoji: '🥖', order: 2 },
-            'meat': { name: 'Meat & Seafood', emoji: '🥩', order: 3 },
-            'dairy': { name: 'Dairy & Eggs', emoji: '🥛', order: 4 },
-            'frozen': { name: 'Frozen', emoji: '❄️', order: 5 },
-            'pantry': { name: 'Pantry & Canned', emoji: '🥫', order: 6 },
-            'snacks': { name: 'Snacks & Sweets', emoji: '🍿', order: 7 },
-            'beverages': { name: 'Beverages', emoji: '🥤', order: 8 },
-            'household': { name: 'Household & Cleaning', emoji: '🧹', order: 9 },
-            'health': { name: 'Health & Beauty', emoji: '💊', order: 10 },
-            'other': { name: 'Other', emoji: '📦', order: 11 }
+            'produce': { emoji: '🥬', order: 1 },
+            'bakery': { emoji: '🥖', order: 2 },
+            'meat': { emoji: '🥩', order: 3 },
+            'dairy': { emoji: '🥛', order: 4 },
+            'frozen': { emoji: '❄️', order: 5 },
+            'pantry': { emoji: '🥫', order: 6 },
+            'snacks': { emoji: '🍿', order: 7 },
+            'beverages': { emoji: '🥤', order: 8 },
+            'household': { emoji: '🧹', order: 9 },
+            'health': { emoji: '💊', order: 10 },
+            'other': { emoji: '📦', order: 11 }
         };
 
-        // Keyword mapping for auto-categorization
+        // Keyword mapping for auto-categorization (English + Polish)
         const CATEGORY_KEYWORDS = {
-            'produce': ['apple', 'banana', 'orange', 'tomato', 'lettuce', 'carrot', 'onion', 'potato', 'cucumber', 'pepper', 'spinach', 'broccoli', 'avocado', 'strawberry', 'grape', 'lemon', 'lime', 'garlic', 'mushroom', 'salad', 'celery', 'zucchini', 'fruit', 'vegetable', 'veggie'],
-            'bakery': ['bread', 'bun', 'bagel', 'croissant', 'muffin', 'cake', 'pastry', 'donut', 'roll', 'baguette', 'tortilla', 'pita'],
-            'meat': ['chicken', 'beef', 'pork', 'turkey', 'fish', 'salmon', 'tuna', 'shrimp', 'bacon', 'sausage', 'steak', 'lamb', 'ham', 'meat', 'seafood'],
-            'dairy': ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'sour cream', 'cottage cheese', 'cheddar', 'mozzarella', 'parmesan', 'dairy'],
-            'frozen': ['ice cream', 'frozen', 'pizza', 'fries', 'ice', 'popsicle', 'freezer'],
-            'pantry': ['pasta', 'rice', 'beans', 'cereal', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'sauce', 'soup', 'can', 'jar', 'ketchup', 'mayo', 'mustard', 'vinegar', 'spice', 'canned', 'peanut butter', 'jam', 'honey'],
-            'snacks': ['chips', 'cookie', 'chocolate', 'candy', 'popcorn', 'nuts', 'cracker', 'snack', 'bar', 'granola'],
-            'beverages': ['water', 'soda', 'juice', 'coffee', 'tea', 'beer', 'wine', 'drink', 'cola', 'sprite', 'lemonade', 'smoothie'],
-            'household': ['paper towel', 'toilet paper', 'tissue', 'soap', 'detergent', 'cleaner', 'trash bag', 'aluminum foil', 'plastic wrap', 'dish soap', 'sponge', 'bleach', 'laundry'],
-            'health': ['shampoo', 'toothpaste', 'toothbrush', 'deodorant', 'lotion', 'vitamin', 'medicine', 'bandaid', 'cosmetic', 'beauty']
+            'produce': ['apple', 'banana', 'orange', 'tomato', 'lettuce', 'carrot', 'onion', 'potato', 'cucumber', 'pepper', 'spinach', 'broccoli', 'avocado', 'strawberry', 'grape', 'lemon', 'lime', 'garlic', 'mushroom', 'salad', 'celery', 'zucchini', 'fruit', 'vegetable', 'veggie', 'jabłko', 'banan', 'pomarańcza', 'pomidor', 'sałata', 'marchew', 'cebula', 'ziemniak', 'ogórek', 'papryka', 'szpinak', 'brokuł', 'awokado', 'truskawka', 'winogrono', 'cytryna', 'czosnek', 'grzyb', 'owoc', 'warzywo'],
+            'bakery': ['bread', 'bun', 'bagel', 'croissant', 'muffin', 'cake', 'pastry', 'donut', 'roll', 'baguette', 'tortilla', 'pita', 'chleb', 'bułka', 'rogal', 'ciasto', 'pączek', 'bagietka', 'pieczywo'],
+            'meat': ['chicken', 'beef', 'pork', 'turkey', 'fish', 'salmon', 'tuna', 'shrimp', 'bacon', 'sausage', 'steak', 'lamb', 'ham', 'meat', 'seafood', 'kurczak', 'wołowina', 'wieprzowina', 'indyk', 'ryba', 'łosoś', 'tuńczyk', 'krewetka', 'boczek', 'kiełbasa', 'stek', 'szynka', 'mięso'],
+            'dairy': ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'sour cream', 'cottage cheese', 'cheddar', 'mozzarella', 'parmesan', 'dairy', 'mleko', 'ser', 'jogurt', 'masło', 'śmietana', 'jajko', 'jaja', 'nabiał', 'twaróg'],
+            'frozen': ['ice cream', 'frozen', 'pizza', 'fries', 'ice', 'popsicle', 'freezer', 'lody', 'mrożon', 'frytki', 'lód', 'zamrażalka'],
+            'pantry': ['pasta', 'rice', 'beans', 'cereal', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'sauce', 'soup', 'can', 'jar', 'ketchup', 'mayo', 'mustard', 'vinegar', 'spice', 'canned', 'peanut butter', 'jam', 'honey', 'makaron', 'ryż', 'fasola', 'płatki', 'mąka', 'cukier', 'sól', 'pieprz', 'olej', 'sos', 'zupa', 'konserwa', 'słoik', 'musztarda', 'ocet', 'przyprawa', 'dżem', 'miód'],
+            'snacks': ['chips', 'cookie', 'chocolate', 'candy', 'popcorn', 'nuts', 'cracker', 'snack', 'bar', 'granola', 'chipsy', 'ciastko', 'czekolada', 'cukierek', 'popcorn', 'orzechy', 'krakersy', 'baton'],
+            'beverages': ['water', 'soda', 'juice', 'coffee', 'tea', 'beer', 'wine', 'drink', 'cola', 'sprite', 'lemonade', 'smoothie', 'woda', 'sok', 'kawa', 'herbata', 'piwo', 'wino', 'napój', 'lemoniada'],
+            'household': ['paper towel', 'toilet paper', 'tissue', 'soap', 'detergent', 'cleaner', 'trash bag', 'aluminum foil', 'plastic wrap', 'dish soap', 'sponge', 'bleach', 'laundry', 'ręcznik papierowy', 'papier toaletowy', 'chusteczki', 'mydło', 'proszek', 'środek czyszczący', 'worek na śmieci', 'folia', 'gąbka', 'pranie'],
+            'health': ['shampoo', 'toothpaste', 'toothbrush', 'deodorant', 'lotion', 'vitamin', 'medicine', 'bandaid', 'cosmetic', 'beauty', 'szampon', 'pasta do zębów', 'szczoteczka', 'dezodorant', 'balsam', 'witamina', 'lek', 'plaster', 'kosmetyk']
         };
 
         // Categorize item based on keywords
@@ -370,13 +471,37 @@
             return 'other';
         }
 
+        // Switch language
+        function switchLanguage() {
+            currentLang = currentLang === 'en' ? 'pl' : 'en';
+            localStorage.setItem('language', currentLang);
+            updateUI();
+            renderList();
+        }
+
+        // Update UI text
+        function updateUI() {
+            const t = TRANSLATIONS[currentLang];
+            title.innerHTML = t.title;
+            itemInput.placeholder = t.placeholder;
+            addBtn.textContent = t.addBtn;
+            downloadBtn.textContent = t.downloadBtn;
+            langBtn.textContent = currentLang.toUpperCase();
+            document.documentElement.lang = currentLang;
+        }
+
         // Load from localStorage
         function loadList() {
             const saved = localStorage.getItem('shoppingList');
             if (saved) {
                 shoppingList = JSON.parse(saved);
-                renderList();
             }
+            const savedLang = localStorage.getItem('language');
+            if (savedLang) {
+                currentLang = savedLang;
+            }
+            updateUI();
+            renderList();
         }
 
         // Save to localStorage
@@ -435,29 +560,32 @@
 
         // Render list
         function renderList() {
+            const t = TRANSLATIONS[currentLang];
+
             if (shoppingList.length === 0) {
-                listSection.innerHTML = '<div class="empty-state">Your shopping list is empty.<br>Add some items to get started!</div>';
+                listSection.innerHTML = `<div class="empty-state">${t.emptyState}</div>`;
                 downloadBtn.disabled = true;
-                itemCount.textContent = '0 items';
+                itemCount.textContent = t.itemsCount(0);
                 return;
             }
 
             downloadBtn.disabled = false;
-            itemCount.textContent = `${shoppingList.length} item${shoppingList.length !== 1 ? 's' : ''}`;
+            itemCount.textContent = t.itemsCount(shoppingList.length);
 
             const groupedItems = groupAndSortItems();
 
             listSection.innerHTML = groupedItems.map(group => {
                 const cat = CATEGORIES[group.category];
+                const catName = t.categories[group.category];
                 return `
                     <div class="category-header">
                         <span>${cat.emoji}</span>
-                        <span>${cat.name}</span>
+                        <span>${catName}</span>
                     </div>
                     ${group.items.map(item => `
                         <div class="item">
                             <span class="item-text">${item.name}</span>
-                            <button class="bought-btn" onclick="markAsBought(${item.id})">✓ Bought</button>
+                            <button class="bought-btn" onclick="markAsBought(${item.id})">${t.boughtBtn}</button>
                         </div>
                     `).join('')}
                 `;
@@ -468,26 +596,28 @@
         function downloadExcel() {
             if (shoppingList.length === 0) return;
 
+            const t = TRANSLATIONS[currentLang];
             const groupedItems = groupAndSortItems();
             const data = [];
 
             groupedItems.forEach(group => {
-                const cat = CATEGORIES[group.category];
+                const catName = t.categories[group.category];
                 group.items.forEach(item => {
                     data.push({
-                        'Category': cat.name,
-                        'Item': item.name,
-                        'Added Date': new Date(item.addedDate).toLocaleDateString()
+                        [t.excelHeaders.category]: catName,
+                        [t.excelHeaders.item]: item.name,
+                        [t.excelHeaders.date]: new Date(item.addedDate).toLocaleDateString(currentLang === 'pl' ? 'pl-PL' : 'en-US')
                     });
                 });
             });
 
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Shopping List');
+            const sheetName = currentLang === 'pl' ? 'Lista Zakupów' : 'Shopping List';
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
             // Auto-size columns
-            const maxItemWidth = data.reduce((w, r) => Math.max(w, r.Item.length), 10);
+            const maxItemWidth = data.reduce((w, r) => Math.max(w, r[t.excelHeaders.item].length), 10);
             ws['!cols'] = [
                 { wch: 20 },
                 { wch: maxItemWidth + 2 },
@@ -495,7 +625,8 @@
             ];
 
             const timestamp = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(wb, `shopping-list-${timestamp}.xlsx`);
+            const filename = currentLang === 'pl' ? `lista-zakupow-${timestamp}.xlsx` : `shopping-list-${timestamp}.xlsx`;
+            XLSX.writeFile(wb, filename);
         }
 
         // Event listeners
@@ -504,6 +635,7 @@
             if (e.key === 'Enter') addItem();
         });
         downloadBtn.addEventListener('click', downloadExcel);
+        langBtn.addEventListener('click', switchLanguage);
 
         // Make functions globally available
         window.markAsBought = markAsBought;
