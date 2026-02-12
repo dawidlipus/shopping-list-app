@@ -458,12 +458,26 @@
             'health': ['shampoo', 'toothpaste', 'toothbrush', 'deodorant', 'lotion', 'vitamin', 'medicine', 'bandaid', 'cosmetic', 'beauty', 'szampon', 'pasta do zębów', 'szczoteczka', 'dezodorant', 'balsam', 'witamina', 'lek', 'plaster', 'kosmetyk']
         };
 
+        // Normalize text by removing Polish diacritics
+        function normalizePolish(text) {
+            return text.toLowerCase()
+                .replace(/ą/g, 'a')
+                .replace(/ć/g, 'c')
+                .replace(/ę/g, 'e')
+                .replace(/ł/g, 'l')
+                .replace(/ń/g, 'n')
+                .replace(/ó/g, 'o')
+                .replace(/ś/g, 's')
+                .replace(/ź/g, 'z')
+                .replace(/ż/g, 'z');
+        }
+
         // Categorize item based on keywords
         function categorizeItem(itemName) {
-            const lowerName = itemName.toLowerCase();
+            const normalizedName = normalizePolish(itemName);
 
             for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-                if (keywords.some(keyword => lowerName.includes(keyword))) {
+                if (keywords.some(keyword => normalizedName.includes(normalizePolish(keyword)))) {
                     return category;
                 }
             }
